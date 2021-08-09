@@ -1,0 +1,238 @@
+import { book, prism } from '@mdx-deck/themes';
+export const theme = { ...book, ...prism };
+
+import './src/styles.css';
+
+# UI Optimization
+
+### a.k.a. How to avoid wasted renders
+
+---
+
+# What is wasted renders?
+
+- In React, it is the unnecessary render cycles caused by a state change
+
+- This is one of the most common issues that affects performance
+
+---
+
+# Very Expensive Component
+
+```jsx
+export default function VeryExpensiveComponent() {
+  console.log('Rendering expensive component...');
+  const now = performance.now();
+  while (performance.now() - now < 400) {
+    // delay 400ms
+  }
+
+  return (
+    <div
+      style={{
+        ...boxStyle,
+        borderColor: 'red',
+      }}
+    >
+      Expensive component
+    </div>
+  );
+}
+```
+
+---
+
+import SlowApp1 from './src/slow-app-1';
+
+<SlowApp1 />
+
+```jsx
+function SlowApp1() {
+  const [backgroundColor, setBackgroundColor] = React.useState('');
+
+  return (
+    <>
+      <label>Enter my component background color</label>
+      <input
+        value={backgroundColor}
+        onChange={e => setBackgroundColor(e.target.value)}
+      />
+      <div style={{ ...boxStyle, backgroundColor }}>My component</div>
+      <VeryExpensiveComponent />
+    </>
+  );
+}
+```
+
+---
+
+import SolutionWithReactMemo from './src/solution-react-memo';
+
+<SolutionWithReactMemo />
+
+```jsx
+export default function SolutionWithReactMemo() {
+  const [backgroundColor, setBackgroundColor] = React.useState('');
+
+  return (
+    <>
+      <label>Enter my component background color</label>
+      <input
+        value={backgroundColor}
+        onChange={e => setBackgroundColor(e.target.value)}
+      />
+      <div style={{ ...boxStyle, backgroundColor }}>My component</div>
+      <MemoExpensiveComponent />
+    </>
+  );
+}
+
+const MemoExpensiveComponent = React.memo(function MemoExpensiveComponent() {
+  return <VeryExpensiveComponent />;
+});
+```
+
+---
+
+# Drawbacks of React.memo
+
+- Wrapping components in HoC makes your code bloated
+
+- By default, it only runs shallow equality on objects
+
+- If your component contains useState, useReducer, or useContext, it will still re-render if state or context change
+
+---
+
+import SolutionMoveState from './src/solution-move-state';
+
+<SolutionMoveState />
+
+```jsx
+export default function SolutionMoveState() {
+  return (
+    <>
+      <Form />
+      <VeryExpensiveComponent />
+    </>
+  );
+}
+
+function Form() {
+  const [backgroundColor, setBackgroundColor] = React.useState('');
+
+  return (
+    <>
+      <label>Enter my component background color</label>
+      <input
+        value={backgroundColor}
+        onChange={e => setBackgroundColor(e.target.value)}
+      />
+      <div style={{ ...boxStyle, backgroundColor }}>My component</div>
+    </>
+  );
+}
+```
+
+---
+
+# Limitation of Moving the State
+
+Moving the state won't work if the state is needed somewhere above the expensive component because we can't just simply "move" the state into its own component.
+
+---
+
+import SlowApp2 from './src/slow-app-2';
+
+<SlowApp2 />
+
+```jsx
+export default function SlowApp2() {
+  const [backgroundColor, setBackgroundColor] = React.useState('');
+
+  return (
+    <div style={{ backgroundColor }}>
+      <label>Enter app background color</label>
+      <input
+        value={backgroundColor}
+        onChange={e => setBackgroundColor(e.target.value)}
+      />
+      <div style={boxStyle}>My component</div>
+      <VeryExpensiveComponent />
+    </div>
+  );
+}
+```
+
+---
+
+import SolutionUseChildren from './src/solution-use-children';
+
+<SolutionUseChildren />
+
+```jsx
+export default function SolutionUseChildren() {
+  return (
+    <AppBackgroundSetter>
+      <div style={boxStyle}>My component</div>
+      <VeryExpensiveComponent />
+    </AppBackgroundSetter>
+  );
+}
+
+function AppBackgroundSetter({ children }) {
+  const [backgroundColor, setBackgroundColor] = React.useState('');
+
+  return (
+    <div style={{ backgroundColor }}>
+      <label>Enter app background color</label>
+      <input
+        value={backgroundColor}
+        onChange={e => setBackgroundColor(e.target.value)}
+      />
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+# What We Did?
+
+We grouped the app in two components:
+
+- AppBackgroundSetter that depends on the backgroundColor and the state itself
+
+```jsx
+<div style={{ backgroundColor }}>
+  <label>Enter app background color</label>
+  <input
+    value={backgroundColor}
+    onChange={e => setBackgroundColor(e.target.value)}
+  />
+  {children}
+</div>
+```
+
+- Our entry point which does not depend on the backgroundColor and are passed to AppBackgroundSetter as the children prop
+
+```jsx
+<AppBackgroundSetter>
+  <div style={boxStyle}>My component</div>
+  <VeryExpensiveComponent />
+</AppBackgroundSetter>
+```
+
+When backgroundColor changes, AppBackgroundSetter re-renders. But its children prop still has the previous prop, telling React to skip this subcomponent.
+And consequently, <VeryExpensiveComponent /> does not re-render.
+
+---
+
+# What We've Learned
+
+Before sprinkling React.memo all over our app, it might make more sense to examine our code and see how we could segregate components based on their responsibility and dependencies.
+
+---
+
+# Questions?
