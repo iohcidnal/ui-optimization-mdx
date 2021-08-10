@@ -17,9 +17,9 @@ function AppBackgroundSetter({ children }) {
 
   return (
     <div style={{ backgroundColor }}>
-      <h3>Solution - Use children prop</h3>
       <label htmlFor="input">Enter app background color</label>
       <input
+        autoComplete="off"
         id="input"
         value={backgroundColor}
         onChange={e => setBackgroundColor(e.target.value)}

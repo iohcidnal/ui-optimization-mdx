@@ -8,9 +8,9 @@ export default function SolutionWithReactMemo() {
 
   return (
     <>
-      <h2>Solution - With React Memo</h2>
       <label htmlFor="input">Enter my component background color</label>
       <input
+        autoComplete="off"
         id="input"
         value={backgroundColor}
         onChange={e => setBackgroundColor(e.target.value)}

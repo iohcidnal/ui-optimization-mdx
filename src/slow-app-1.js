@@ -8,9 +8,9 @@ export default function SlowApp1() {
 
   return (
     <>
-      <h2>Slow App</h2>
       <label htmlFor="input">Enter my component background color</label>
       <input
+        autoComplete="off"
         id="input"
         value={backgroundColor}
         onChange={e => setBackgroundColor(e.target.value)}
